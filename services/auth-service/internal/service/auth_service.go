@@ -42,7 +42,36 @@ func (s *userService) Register(req auth.RegisterRequest) (*auth.TokenResponse, e
 	if err := s.userRepo.Create(user); err != nil {
 		return nil, errors.New("failed to create a new user")
 	}
-	return s.
+	return s.GenerateTokens(*user)
+}
+
+func (s *userService) Login(req auth.LoginRequest) (*auth.TokenResponse, error) {
+	user, err := s.userRepo.GetByEmail(req.Email)
+	if err != nil {
+		return nil, errors.New("email already exists")
+	}
+	match := auth.CheckPassword(req.Password, user.Password)
+	if !match {
+		return nil, errors.New("invalid credentials")
+	}
+	return s.GenerateTokens(*user)
+}
+
+func (s *userService) RefreshToken(req string) (*auth.TokenResponse, error) {
+	// validate the token
+	claims, err := auth.ValidateRefreshToken(req)
+	if err != nil {
+		return nil, err
+	}
+	// get user from claims
+	user, err := s.userRepo.GetByID(claims.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if !user.IsActive {
+		return nil, errors.New("user is inactive")
+	}
+	return s.GenerateTokens(*user)
 }
 
 func (s *userService) GenerateTokens(user models.User) (*auth.TokenResponse, error) {
@@ -61,4 +90,20 @@ func (s *userService) GenerateTokens(user models.User) (*auth.TokenResponse, err
 		RefreshToken: refreshToken,
 		ExpiresIn:    int64(auth.GetAccessTokenTTL().Seconds()),
 	}, nil
+}
+
+func (s *userService) GetUserFromToken(req string) (*models.User, error) {
+	claims, err := auth.ValidateAccessToken(req)
+	if err != nil {
+		return nil, err
+	}
+	// get user from claims
+	user, err := s.userRepo.GetByID(claims.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if !user.IsActive {
+		return nil, errors.New("user is inactive")
+	}
+	return user, nil
 }

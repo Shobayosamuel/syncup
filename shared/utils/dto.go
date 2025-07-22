@@ -1,4 +1,4 @@
-package auth
+package utils
 
 type RegisterRequest struct {
 	Email string `json:"email" binding:"required,email"`

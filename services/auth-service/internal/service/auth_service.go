@@ -4,32 +4,26 @@ import (
 	"errors"
 
 	"github.com/Shobayosamuel/syncup/services/auth-service/internal/repository"
-	"github.com/Shobayosamuel/syncup/shared/auth"
+	"github.com/Shobayosamuel/syncup/shared/utils"
 	"github.com/Shobayosamuel/syncup/shared/models"
+	"github.com/Shobayosamuel/syncup/shared/interfaces"
 )
 
-type UserService interface {
-	Register(req auth.RegisterRequest) (*auth.TokenResponse, error)
-	Login(req auth.LoginRequest) (*auth.TokenResponse, error)
-	RefreshToken(req string) (*auth.TokenResponse, error)
-	GetUserFromToken(req string) (*models.User, error)
-	GenerateTokens(user models.User) (*auth.TokenResponse, error)
-}
 type userService struct {
 	userRepo repository.UserRepository
 }
 
-func NewUserService(userRepo repository.UserRepository) UserService {
+func NewUserService(userRepo repository.UserRepository) interfaces.UserService {
 	return &userService{
 		userRepo: userRepo,
 	}
 }
 
-func (s *userService) Register(req auth.RegisterRequest) (*auth.TokenResponse, error) {
+func (s *userService) Register(req utils.RegisterRequest) (*utils.TokenResponse, error) {
 	if _, err := s.userRepo.GetByEmail(req.Email); err == nil {
 		return nil, errors.New("email already exists")
 	}
-	hashed_password, err := auth.HashPassword(req.Password)
+	hashed_password, err := utils.HashPassword(req.Password)
 	if err != nil {
 		return nil, errors.New("failed to hash password")
 	}
@@ -45,21 +39,21 @@ func (s *userService) Register(req auth.RegisterRequest) (*auth.TokenResponse, e
 	return s.GenerateTokens(*user)
 }
 
-func (s *userService) Login(req auth.LoginRequest) (*auth.TokenResponse, error) {
+func (s *userService) Login(req utils.LoginRequest) (*utils.TokenResponse, error) {
 	user, err := s.userRepo.GetByEmail(req.Email)
 	if err != nil {
 		return nil, errors.New("email already exists")
 	}
-	match := auth.CheckPassword(req.Password, user.Password)
+	match := utils.CheckPassword(req.Password, user.Password)
 	if !match {
 		return nil, errors.New("invalid credentials")
 	}
 	return s.GenerateTokens(*user)
 }
 
-func (s *userService) RefreshToken(req string) (*auth.TokenResponse, error) {
+func (s *userService) RefreshToken(req string) (*utils.TokenResponse, error) {
 	// validate the token
-	claims, err := auth.ValidateRefreshToken(req)
+	claims, err := utils.ValidateRefreshToken(req)
 	if err != nil {
 		return nil, err
 	}
@@ -74,26 +68,26 @@ func (s *userService) RefreshToken(req string) (*auth.TokenResponse, error) {
 	return s.GenerateTokens(*user)
 }
 
-func (s *userService) GenerateTokens(user models.User) (*auth.TokenResponse, error) {
-	accessToken, err := auth.GenerateAccessToken(user)
+func (s *userService) GenerateTokens(user models.User) (*utils.TokenResponse, error) {
+	accessToken, err := utils.GenerateAccessToken(user)
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
 	}
 
-	refreshToken, err := auth.GenerateRefreshToken(user)
+	refreshToken, err := utils.GenerateRefreshToken(user)
 	if err != nil {
 		return nil, errors.New("failed to generate refresh token")
 	}
 
-	return &auth.TokenResponse{
+	return &utils.TokenResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		ExpiresIn:    int64(auth.GetAccessTokenTTL().Seconds()),
+		ExpiresIn:    int64(utils.GetAccessTokenTTL().Seconds()),
 	}, nil
 }
 
 func (s *userService) GetUserFromToken(req string) (*models.User, error) {
-	claims, err := auth.ValidateAccessToken(req)
+	claims, err := utils.ValidateAccessToken(req)
 	if err != nil {
 		return nil, err
 	}

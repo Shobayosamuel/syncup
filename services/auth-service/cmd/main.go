@@ -11,7 +11,8 @@ import (
 	"github.com/Shobayosamuel/syncup/services/auth-service/internal/config"
 	"github.com/Shobayosamuel/syncup/shared/models"
 	"github.com/Shobayosamuel/syncup/services/auth-service/internal/repository"
-	"github.com/Shobayosamuel/syncup/services/auth-service/internal/service/auth_service"
+	"github.com/Shobayosamuel/syncup/services/auth-service/internal/handlers"
+	"github.com/Shobayosamuel/syncup/services/auth-service/internal/service"
 )
 
 
@@ -29,11 +30,11 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 
 	// Setup services
-	authService := auth_service.NewUserService(userRepo)
+	authService := service.NewUserService(userRepo)
 
 
 	// Setup handlers
-	authHandler := auth.NewHandler(authService)
+	authHandler := handlers.NewHandler(authService)
 
 	// Setup router
 	r := gin.Default()
@@ -63,7 +64,8 @@ func main() {
 
 	// Protected routes
 	apiGroup := r.Group("/api")
-	apiGroup.Use(middleware.AuthMiddleware(authService))
+	// apiGroup.Use(middleware.AuthMiddleware(authService))
+	apiGroup.Use()
 	{
 		// Auth routes
 		apiGroup.GET("/profile", authHandler.GetProfile)
@@ -72,7 +74,7 @@ func main() {
 
 	// Start server
 	log.Printf("Server starting on :%s", cfg.Server.Port)
-	r.Run(":" + cfg.Server.Port)
+	r.Run(fmt.Sprintf(":%d", cfg.Database.Port))
 }
 
 func setupDatabase(cfg *config.Config) *gorm.DB {

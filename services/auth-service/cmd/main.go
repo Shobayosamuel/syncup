@@ -73,12 +73,12 @@ func main() {
 	}
 
 	// Start server
-	log.Printf("Server starting on :%s", cfg.Server.Port)
-	r.Run(fmt.Sprintf(":%d", cfg.Database.Port))
+	log.Printf("Server starting on :%d", cfg.Server.Port)
+	r.Run(fmt.Sprintf(":%d", cfg.Server.Port))
 }
 
 func setupDatabase(cfg *config.Config) *gorm.DB {
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Database.Host,
 		cfg.Database.Port,
 		cfg.Database.User,

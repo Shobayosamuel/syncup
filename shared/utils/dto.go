@@ -25,3 +25,18 @@ type UserResponse struct {
 	Email    string `json:"email"`
 	IsActive bool   `json:"is_active"`
 }
+
+type UpdateProfileRequest struct {
+	Name      string   `json:"name"`
+	Bio       string   `json:"bio"`
+	Age       int      `json:"age"`
+	Gender    string   `json:"gender"`
+	Interests []string `json:"interests"`
+}
+
+type UpdatePreferencesRequest struct {
+	MinAge          int    `json:"min_age"`
+	MaxAge          int    `json:"max_age"`
+	MaxDistance     int    `json:"max_distance"`
+	PreferredGender string `json:"preferred_gender"`
+}
